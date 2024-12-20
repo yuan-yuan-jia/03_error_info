@@ -4,3 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+error-code-derive = {workspace = true}
+thiserror = "1"
+http = "1"
+
+[dev.dependencies]
+anyhow = {workspace = true}
+error-code = {workspace = true}
+http = {workspace = true}
+thiserror = {workspace = true}

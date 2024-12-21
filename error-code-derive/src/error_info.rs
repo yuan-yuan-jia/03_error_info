@@ -4,7 +4,7 @@ use darling::{
     util,
     ast::Fields
 };
-use darling::ast::Data;
+use darling::ast::{Data, Style};
 use syn::DeriveInput;
 use proc_macro::TokenStream;
 use quote::quote;
@@ -58,17 +58,29 @@ pub(crate) fn process_error_info(input: DeriveInput) -> TokenStream {
     let code = data.iter().map(|v|{
         let EnumVariants {
             ident,
-            fields: _,
+            fields,
             code,
             app_code,
             client_msg,
         } = v;
 
         let code = format!("{}{}", prefix, code);
-
+        let variant_code = match fields.style {
+            Style::Tuple => {
+                quote! {
+                    #name::#ident(_)
+                }
+            },
+            Style::Unit => {
+                quote! {#name::#ident}
+            },
+            Style::Struct => {
+                quote! {#name::#ident {..}}
+            },
+        };
         quote! {
-            #name::#ident(_) => {
-                ErrorInfo::try_new(
+            #variant_code => {
+                ErrorInfo::new(
                     #app_code,
                     #code,
                     #client_msg,
@@ -82,7 +94,7 @@ pub(crate) fn process_error_info(input: DeriveInput) -> TokenStream {
             use error_code::{ErrorInfo, ToErrorInfo};
             impl #generics ToErrorInfo for #name #generics {
                 type T = #app_type;
-                fn to_error_info(&self) -> Result<ErrorInfo<Self::T>, <Self::T as std::str::FromStr>::Err> {
+                fn to_error_info(&self) -> ErrorInfo<Self::T> {
                     match self {
                         #(#code),*
                     }
